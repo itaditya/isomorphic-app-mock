@@ -43,5 +43,4 @@ const fakeFetchConfig = {
   },
 };
 
-global.fetch = fakeFetch;
-// global.fetch = realFetch;  // comment this line to enable fake fetch.
+global.fetch = process.env.FAKE_FETCH ? fakeFetch : realFetch;

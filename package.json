@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:mocked": "FAKE_FETCH=true next dev",
     "build": "next build",
     "start": "next start"
   },
