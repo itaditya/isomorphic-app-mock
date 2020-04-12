@@ -1,17 +1,16 @@
-import nodeFetch from 'node-fetch';
-
 let fetchConfig;
 
 function serverFetch(url, ...restArgs) {
+  const nodeFetch = require('node-fetch');
   const actualUrl = fetchConfig.baseUrl + url;
   return nodeFetch(actualUrl, ...restArgs);
 }
 
 const realFetch = typeof window === 'undefined' ? serverFetch : window.fetch;
 
-const jsonMethodPromise = ({ ok, data }) => {
+const jsonMethodPromise = ({ data, ...restArgs }) => {
   return {
-    ok,
+    ...restArgs,
     json: () => Promise.resolve(data),
   };
 };
