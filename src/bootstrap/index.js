@@ -1,46 +1,25 @@
-import nodeFetch from 'node-fetch';
+import { init } from '../utils/mofetch';
 
-const realFetch = process.browser ? window.fetch : nodeFetch;
-
-const jsonMethodPromise = (data) => {
-  return {
-    json: () => Promise.resolve(data),
-  }
-}
-
-const fakeFetch = (url, ...restArgs) => {
-  const mock = fakeFetchConfig[url];
-
-  if(!mock) {
-    return realFetch(url, ...restArgs);
-  }
-
-  const mockData = mock.data;
-  const mockDelay = mock.delay || 300;
-  const mockReject = mock.shouldReject || false;
-
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if(mockReject) {
-        reject();
-        return;
-      }
-      resolve(jsonMethodPromise(mockData));
-    }, mockDelay);
-  });
-}
-
-const fakeFetchConfig = {
-  '/api/todos': {
-    data: ['a', 'x', 'p'],
-    delay: 800,
-    shouldReject: false,
-  },
-  '/api/preferences': {
-    data: {
-      theme: 'dark',
+const fetchConfig = {
+  baseUrl: 'http://localhost:3000',
+  mocks: {
+    '/api/todos': {
+      data: ['a', 'x', 'p'],
+      delay: 800,
+      shouldReject: false,
+      statusCode: 200,
+    },
+    '/api/users/1': {
+      data: {
+        name: 'Aditya Agarwal',
+      },
+    },
+    '/api/preferences': {
+      data: {
+        theme: 'dark',
+      },
     },
   },
 };
 
-global.fetch = process.env.FAKE_FETCH ? fakeFetch : realFetch;
+init(fetchConfig);
