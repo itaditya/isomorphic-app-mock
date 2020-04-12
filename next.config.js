@@ -1,5 +1,5 @@
 module.exports = {
   env: {
-    FAKE_FETCH: process.env.FAKE_FETCH,
+    MOCK_FETCH: process.env.MOCK_FETCH,
   },
 }

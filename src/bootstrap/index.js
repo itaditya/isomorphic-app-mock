@@ -4,7 +4,7 @@ const fetchConfig = {
   baseUrl: 'http://localhost:3000',
   mocks: {
     '/api/todos': {
-      data: ['a', 'x', 'p'],
+      data: require('../fixtures/api/todos.json'),
       delay: 800,
       shouldReject: false,
       statusCode: 200,

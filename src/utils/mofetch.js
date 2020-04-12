@@ -8,13 +8,6 @@ function serverFetch(url, ...restArgs) {
 
 const realFetch = typeof window === 'undefined' ? serverFetch : window.fetch;
 
-const jsonMethodPromise = ({ data, ...restArgs }) => {
-  return {
-    ...restArgs,
-    json: () => Promise.resolve(data),
-  };
-};
-
 const fakeFetch = (url, ...restArgs) => {
   const actualUrl = url.split(/[?#]/)[0];
   const mock = fetchConfig.mocks[actualUrl];
@@ -34,13 +27,11 @@ const fakeFetch = (url, ...restArgs) => {
         reject('Network request failed');
         return;
       }
-      resolve(
-        jsonMethodPromise({
-          status: mockStatusCode,
-          ok: mockStatusCode < 400,
-          data: mockData,
-        }),
-      );
+      resolve({
+        status: mockStatusCode,
+        ok: mockStatusCode < 400,
+        json: () => Promise.resolve(mockData),
+      });
     }, mockDelay);
   });
 };
@@ -50,5 +41,5 @@ export function init(config) {
 }
 
 export function fetch(...restArgs) {
-  return process.env.FAKE_FETCH ? fakeFetch(...restArgs) : realFetch(...restArgs);
+  return process.env.MOCK_FETCH ? fakeFetch(...restArgs) : realFetch(...restArgs);
 }
