@@ -1,5 +1,14 @@
 [
-  "hello",
-  "yolo",
-  "yayy!"
+  {
+    "id": "1",
+    "text": "Mocked Task 1"
+  },
+  {
+    "id": "2",
+    "text": "Mocked Task 2"
+  },
+  {
+    "id": "3",
+    "text": "Mocked Task 3"
+  }
 ]

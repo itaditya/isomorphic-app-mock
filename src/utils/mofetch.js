@@ -8,12 +8,12 @@ function serverFetch(url, ...restArgs) {
 
 const realFetch = typeof window === 'undefined' ? serverFetch : window.fetch;
 
-const fakeFetch = (url, ...restArgs) => {
+const fakeFetch = async (url, options = {}) => {
   const actualUrl = url.split(/[?#]/)[0];
   const mock = fetchConfig.mocks[actualUrl];
 
   if (!mock) {
-    return realFetch(url, ...restArgs);
+    return realFetch(url, options);
   }
 
   const mockData = mock.data;

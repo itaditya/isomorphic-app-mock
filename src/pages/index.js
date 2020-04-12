@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { fetch } from '../utils/mofetch';
 
@@ -5,6 +6,17 @@ const Home = (props) => {
   const { user } = props;
   const [stateApiStatus, setStateApiStatus] = useState('loading');
   const [stateTodos, setStateTodos] = useState([]);
+
+  async function deleteTodo(id) {
+    const resTodos = await fetch(`/api/todos/${id}`, {
+      method: 'DELETE',
+    });
+
+    setStateTodos(oldTodos => {
+      const newList = oldTodos.filter(item => item.id !== id);
+      return newList;
+    });
+  }
 
   useEffect(() => {
     (async function () {
@@ -31,8 +43,17 @@ const Home = (props) => {
           ? 'Loading...'
           : stateApiStatus === 'failed'
           ? 'Failed !'
-          : stateTodos.map((todo) => <li key={todo}>{todo}</li>)}
+          : stateTodos.map((todo) => (
+              <li key={todo.id} onClick={() => deleteTodo(todo.id)}>
+                {todo.text}
+              </li>
+            ))}
       </ul>
+      <Link href="/about">
+        <a>
+          About
+        </a>
+      </Link>
     </div>
   );
 };
