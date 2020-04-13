@@ -5,7 +5,8 @@ const About = (props) => {
     <ul>
       {props.todos.map((todo) => (
         <li key={todo.id}>
-          {todo.text}
+          <span>{todo.id} -> </span>
+          <span>{todo.text}</span>
         </li>
       ))}
     </ul>
