@@ -1,98 +1,115 @@
-let fetchConfig, mockedUrls;
+import Router from 'url-router';
 
 function logger(string) {
   console.log(`[mofetch] ${string}`);
 }
 
-const apiCache = {};
+function loggerAPI({ method, url }) {
+  logger(`${method}: ${url}`);
+}
+
+const mockConfig = {
+  baseUrl: '',
+  delay: process.env.NODE_ENV === 'development' ? 400 : 0,
+};
+
+const router = new Router();
+
+function getStoredUrl(url, method) {
+  return `${method}:${url}`;
+}
+
+const mocker = {
+  handle(url, method, handler, config = {}) {
+    const storedUrl = getStoredUrl(url, method);
+    router.add(storedUrl, {
+      handler,
+      config,
+    });
+  },
+  get(url, handler, config) {
+    mocker.handle(url, 'GET', handler, config);
+  },
+  post(url, handler, config) {
+    mocker.handle(url, 'POST', handler, config);
+  },
+  put(url, handler, config) {
+    mocker.handle(url, 'PUT', handler, config);
+  },
+  patch(url, handler, config) {
+    mocker.handle(url, 'PATCH', handler, config);
+  },
+  delete(url, handler, config) {
+    mocker.handle(url, 'DELETE', handler, config);
+  },
+  all(url, handler, config) {
+    mocker.handle(url, '*', handler, config);
+  },
+};
 
 function serverFetch(url, ...restArgs) {
   const nodeFetch = require('node-fetch');
-  const actualUrl = fetchConfig.baseUrl + url;
+  const actualUrl = mockConfig.baseUrl + url;
   return nodeFetch(actualUrl, ...restArgs);
 }
 
 const realFetch = typeof window === 'undefined' ? serverFetch : window.fetch;
 
-function applyUpdates(url, options, mock) {
-  const itemFinder = (item) => mock.itemFinder(item, mock.params);
-  const data = apiCache[url];
-  if (options.method === 'POST') {
-    const body = JSON.parse(options.body);
-    const newData = [...data, body];
-    apiCache[url] = newData;
-    return;
-  }
+function getUrlData(url, method) {
+  const fromEntries = Object.fromEntries || require('object.fromentries');
+  const actualUrl = url.split(/[?#]/)[0];
 
-  if (options.method === 'PUT' || options.method === 'PATCH') {
-    const itemIndex = data.findIndex(itemFinder);
-    const item = data[itemIndex];
-    const body = JSON.parse(options.body);
-    const newItem = options.method === 'PUT' ? body : {
-      ...item,
-      ...body,
-    };
+  const parsedUrl = new URL(mockConfig.baseUrl + url);
+  const query = fromEntries(parsedUrl.searchParams.entries());
+  const storedUrl = getStoredUrl(actualUrl, method);
 
-    data.splice(itemIndex, 1, newItem);
-    apiCache[url] = data;
-    return;
-  }
-
-  if (options.method === 'DELETE') {
-    const itemIndex = data.findIndex(itemFinder);
-    data.splice(itemIndex, 1);
-    apiCache[url] = data;
-    return;
-  }
+  return { storedUrl, query };
 }
 
-function getMock(url) {
-  const key = mockedUrls.find(mockUrl => url.startsWith(mockUrl));
-  const paramString = url.replace(key, '');
-  const [_, ...params] = paramString.split('/');
-
-  fetchConfig.mocks[key].params = params;
-  return fetchConfig.mocks[key];
+function getMockHandler(url, method) {
+  const { storedUrl, query } = getUrlData(url, method);
+  const routeData = router.find(storedUrl);
+  if (!routeData) {
+    return {};
+  }
+  const { handler: handlerData, params } = routeData;
+  const { handler, config } = handlerData;
+  return { handler, config, query, params };
 }
 
 const fakeFetch = async (url, options = {}) => {
-  logger(`${options.method || 'GET'}: ${url}`);
-  const actualUrl = url.split(/[?#]/)[0];
-  const mock = getMock(actualUrl);
+  const method = options.method || 'GET';
+  const { handler, config, query, params } = getMockHandler(url, method);
 
-  if (!mock) {
+  if (!handler) {
     return realFetch(url, options);
   }
 
-  if (!apiCache[actualUrl]) {
-    apiCache[actualUrl] = mock.data;
-  }
-
-  applyUpdates(actualUrl, options, mock);
-
-  const mockData = apiCache[actualUrl];
-  const mockDelay = mock.delay || 300;
-  const mockShouldReject = mock.shouldReject ?? false;
-  const mockStatusCode = mock.statusCode || 200;
+  loggerAPI({ method, url });
 
   return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (mockShouldReject) {
-        reject('Network request failed');
-        return;
+    function send() {
+      try {
+        const isFunction = typeof handler === 'function';
+        const { status, data } = isFunction ? handler({ query, params }) : handler;
+        resolve({
+          status: status,
+          ok: status < 400,
+          json: () => Promise.resolve(data),
+        });
+      } catch (error) {
+        reject(error);
       }
-      resolve({
-        status: mockStatusCode,
-        ok: mockStatusCode < 400,
-        json: () => Promise.resolve(mockData),
-      });
-    }, mockDelay);
+    }
+
+    const delay = config.delay || mockConfig.delay;
+    setTimeout(send, delay);
   });
 };
 
 export function init(config) {
-  fetchConfig = config;
-  mockedUrls = Object.keys(fetchConfig.mocks);
+  Object.assign(mockConfig, config);
+  return mocker;
 }
 
 export function fetch(...restArgs) {
