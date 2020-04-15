@@ -93,7 +93,7 @@ const fakeFetch = async (url, options = {}) => {
     function send() {
       try {
         const isFunction = typeof handler === 'function';
-        const { status, data } = isFunction ? handler({ query, params }) : handler;
+        const { status, data } = isFunction ? handler({ query, params, options }) : handler;
         resolve({
           status: status,
           ok: status < 400,

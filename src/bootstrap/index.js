@@ -5,21 +5,30 @@ const mocker = init({
   mockFetch: process.env.MOCK_FETCH,
 });
 
+const todos = require('../fixtures/api/todos.json');
+
 if (process.env.MOCK_FETCH) {
   mocker.get(
     '/api/todos',
     {
       status: 200,
-      data: require('../fixtures/api/todos.json'),
+      data: todos,
     },
     {
       delay: 800,
     },
   );
 
-  mocker.post('/api/todos', {
+  mocker.post('/api/todos', function handler({ options }) {
+    const data = JSON.parse(options.body);
+    todos.push(data);
+    return {
+      status: 200,
+    };
+  });
+
+  mocker.patch('/api/todos/:id/edit', {
     status: 200,
-    data: [],
   });
 
   mocker.get('/api/users/:id', function handler({ query, params }) {
