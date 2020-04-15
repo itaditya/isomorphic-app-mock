@@ -51,7 +51,7 @@ const Home = (props) => {
   useEffect(() => {
     (async function () {
       try {
-        const resTodos = await fetch('/api/todos?a=b');
+        const resTodos = await fetch('/api/todos');
         if (!resTodos.ok) {
           throw new Error('API failed');
         }

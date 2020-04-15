@@ -1,11 +1,15 @@
+import Link from 'next/link';
+
 import { fetch } from '../utils/mofetch';
 
 const About = (props) => {
   return (
     <ul>
       {props.users.map((user) => (
-        <li key={user.name}>
-          <span>{user.name}</span>
+        <li key={user.id}>
+          <Link href="/users/[id]" as={`/users/${user.id}`}>
+            <a>{user.name}</a>
+          </Link>
         </li>
       ))}
     </ul>
