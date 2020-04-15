@@ -1,5 +1,3 @@
-import Router from 'url-router';
-
 function logger(string) {
   console.log(`[mofetch] ${string}`);
 }
@@ -10,10 +8,11 @@ function loggerAPI({ method, url }) {
 
 const mockConfig = {
   baseUrl: '',
+  isInitialized: false,
   delay: process.env.NODE_ENV === 'development' ? 400 : 0,
 };
 
-const router = new Router();
+let router;
 
 function getStoredUrl(url, method) {
   return `${method}:${url}`;
@@ -22,6 +21,9 @@ function getStoredUrl(url, method) {
 const mocker = {
   handle(url, method, handler, config = {}) {
     const storedUrl = getStoredUrl(url, method);
+    if(!router) {
+      throw new Error('You have to enable mocking by setting mockFetch to true');
+    }
     router.add(storedUrl, {
       handler,
       config,
@@ -108,10 +110,20 @@ const fakeFetch = async (url, options = {}) => {
 };
 
 export function init(config) {
-  Object.assign(mockConfig, config);
+  if (config.mockFetch) {
+    const routerImport = require('url-router');
+    const Router = typeof window === 'undefined' ? routerImport : routerImport.default;
+    router = new Router();
+  }
+  Object.assign(mockConfig, config, {
+    isInitialized: true,
+  });
   return mocker;
 }
 
 export function fetch(...restArgs) {
-  return process.env.MOCK_FETCH ? fakeFetch(...restArgs) : realFetch(...restArgs);
+  if (!mockConfig.isInitialized) {
+    throw new Error('Call init() in your app before using fetch.');
+  }
+  return mockConfig.mockFetch ? fakeFetch(...restArgs) : realFetch(...restArgs);
 }
